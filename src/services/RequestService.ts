@@ -1,51 +1,86 @@
 // src/services/requestService.ts
 import { Request, Response } from 'express';
-import { Worker } from 'worker_threads';
-import path from 'path';
-import { RAGApplicationBuilder } from '@llm-tools/embedjs';
+import { OpenAiEmbeddings } from '@llm-tools/embedjs-openai';
+import { RAGApplicationBuilder, SIMPLE_MODELS, TextLoader } from '@llm-tools/embedjs';
 import { OllamaEmbeddings, Ollama } from '@llm-tools/embedjs-ollama';
 import { WebLoader } from '@llm-tools/embedjs-loader-web';
 import { HNSWDb } from '@llm-tools/embedjs-hnswlib';
+import axios from 'axios';
+import xml2js from 'xml2js';
+import { PineconeDb } from '@llm-tools/embedjs-pinecone';
+
 class RequestService {
-    async dummyRequest(req: Request, res: Response): Promise<void> {
-        try {
-            const ragApplication = await new RAGApplicationBuilder()
-                .setModel(new Ollama({ modelName: "llama3.3", baseUrl: 'http://localhost:11434' }))
+    private static ragApplicationInstance: any | null = null;
+    constructor() {
+        this.queryCrustData = this.queryCrustData.bind(this);
+        this.vectorize = this.vectorize.bind(this);
+    }
+    // Singleton pattern for RAG application
+    private async getRAGApplication() {
+        if (!RequestService.ragApplicationInstance) {
+            console.log('Initializing RAG application...');
+            RequestService.ragApplicationInstance = await new RAGApplicationBuilder()
+                .setModel(new Ollama({ modelName: "llama3.1", baseUrl: 'http://localhost:11434' }))
                 .setEmbeddingModel(new OllamaEmbeddings({ model: 'nomic-embed-text', baseUrl: 'http://localhost:11434' }))
                 .setVectorDatabase(new HNSWDb())
                 .build();
+            console.log('RAG application initialized.');
+        }
+        return RequestService.ragApplicationInstance;
+    }
 
-            await ragApplication.addLoader(new WebLoader({ urlOrContent: 'https://www.forbes.com/profile/elon-musk' }));
-            await ragApplication.addLoader(new WebLoader({ urlOrContent: 'https://en.wikipedia.org/wiki/Elon_Musk' }));
+    // Query method
+    async queryCrustData(req: Request, res: Response): Promise<void> {
+        try {
+            const prompt = req.body.prompt || 'What is the capital of France?';
+            const ragApplication = await this.getRAGApplication();
+            const response = await ragApplication.query(prompt);
 
-            const response = await ragApplication.query('What is the net worth of Elon Musk today?')
             res.status(201).json({ message: 'Request submitted successfully', response });
-
         } catch (error) {
-            console.error('Error in submitRequest:', error);
+            console.error('Error in queryCrustData:', error);
             res.status(500).json({ error: 'Internal Server Error' });
         }
     }
 
-    async expensiveRequest(req: Request, res: Response): Promise<void> {
-        const startTime = new Date().getTime();
-        const worker = new Worker(path.join(__dirname, '../utils/threadWorker.js'));
-        worker.on('message', (result) => {
-            const endTime = new Date().getTime();
-            const timeTaken = (endTime - startTime) / 1000;
+    // Vectorize method
+    async vectorize(req: Request, res: Response): Promise<void> {
+        try {
+            const ragApplication = await this.getRAGApplication();
+            await ragApplication.addLoader(new TextLoader({ text: 'Sample text to vectorize' }));
 
-            res.status(200).json({
-                message: 'Expensive request completed',
-                time: `Time taken: ${timeTaken} seconds`,
-                result: result
-            });
-        });
-
-        worker.on('error', (error) => {
-            console.error('Error in worker:', error);
+            res.status(201).json({ message: 'Vectorization completed.' });
+        } catch (error) {
+            console.error('Error in vectorize:', error);
             res.status(500).json({ error: 'Internal Server Error' });
-        });
+        }
+    }
+
+    // Load URLs from sitemap
+    async loadFromSitemap(url: string): Promise<void> {
+        try {
+            const sitemapUrl = url || 'https://nextjs.org/sitemap.xml';
+
+            // Fetch and parse the sitemap
+            const response = await axios.get(sitemapUrl);
+            const sitemapXml = response.data;
+            const parsedSitemap = await xml2js.parseStringPromise(sitemapXml, { explicitArray: false });
+            const urls = parsedSitemap.urlset.url.map((entry: any) => entry.loc);
+
+            console.log('Extracted URLs from sitemap:', urls);
+
+            // Load URLs into RAG application
+            const ragApplication = await this.getRAGApplication();
+            for (let i = 100; i < 200; i++) {
+                const loader = new WebLoader({ urlOrContent: urls[i] });
+                await ragApplication.addLoader(loader);
+                console.log(`Added URL to loader: ${urls[i]}`);
+            }
+
+        } catch (error) {
+            console.error('Error in loadFromSitemap:', error);
+        }
     }
 }
-export default RequestService;
 
+export default RequestService;
