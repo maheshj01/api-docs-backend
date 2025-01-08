@@ -4,22 +4,24 @@ import dotenv from 'dotenv';
 import publicRoutes from './routes/publicRoutes';
 import RequestService from './services/RequestService';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT;
-// Middleware to parse JSON requests
 
 dotenv.config();
 
 const corsOptions = {
-    origin: [process.env.CLIENT_BASE_URL || 'http://localhost:3000', 'https://www.getpostman.com'],
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true, // Allow cookies, if your application uses them
-    optionsSuccessStatus: 204, // Some legacy browsers (IE11) choke on 204
-    // headers: 'Content-Type, Authorization, Content-Length, X-Requested-With',
+    origin: [process.env.CLIENT_BASE_URL || 'http://localhost:3000', 'http://localhost:3000', 'https://www.getpostman.com'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // Ensure all methods are listed
+    credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+    allowedHeaders: ['Content-Type', 'Authorization'], // Explicitly list allowed headers
+    optionsSuccessStatus: 200, // Standard success status for OPTIONS requests
 };
 app.use(cors(corsOptions));
+app.use("*", cors(corsOptions));
 
 app.use(express.json());
 app.use(bodyParser.json());
@@ -28,6 +30,11 @@ app.use('/api/v1', publicRoutes);
 
 app.listen(PORT, () => {
     console.log('Server is running on port ' + PORT);
+    const markdownPath = path.resolve(__dirname, 'data.md');
+    const examplesPath = path.resolve(__dirname, 'examples.md');
+    const markdownData: string = fs.readFileSync(markdownPath, 'utf-8');
+    const examplesData: string = fs.readFileSync(examplesPath, 'utf-8');
+    new RequestService().loadFromText(markdownData);
 
-    new RequestService().loadFromSitemap('https://nextjs.org/sitemap.xml');
+    // new RequestService().loadFromSitemap('https://nextjs.org/sitemap.xml');
 });
