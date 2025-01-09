@@ -34,7 +34,7 @@ app.listen(PORT, () => {
     const examplesPath = path.resolve(__dirname, 'examples.md');
     const markdownData: string = fs.readFileSync(markdownPath, 'utf-8');
     const examplesData: string = fs.readFileSync(examplesPath, 'utf-8');
-    new RequestService().loadFromText(markdownData);
-
+    // new RequestService().loadFromText(markdownData);
+    // Run only once
     // new RequestService().loadFromSitemap('https://nextjs.org/sitemap.xml');
 });
