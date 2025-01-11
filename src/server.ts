@@ -6,6 +6,8 @@ import RequestService from './services/RequestService';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
+import http from 'http';
+import { setupWebSocketServer } from './webSocketHandler';
 
 dotenv.config();
 const app = express();
@@ -28,13 +30,17 @@ app.use(bodyParser.json());
 // Mount the checkout routes
 app.use('/api/v1', publicRoutes);
 
-app.listen(PORT, () => {
+const server = http.createServer(app);
+
+setupWebSocketServer(server);
+
+server.listen(PORT, async () => {
     console.log('Server is running on port ' + PORT);
     const markdownPath = path.resolve(__dirname, 'data.md');
     const examplesPath = path.resolve(__dirname, 'examples.md');
     const markdownData: string = fs.readFileSync(markdownPath, 'utf-8');
     const examplesData: string = fs.readFileSync(examplesPath, 'utf-8');
-    // new RequestService().loadFromText(markdownData);
+    await new RequestService().loadFromText(markdownData);
     // Run only once
     // new RequestService().loadFromSitemap('https://nextjs.org/sitemap.xml');
 });
