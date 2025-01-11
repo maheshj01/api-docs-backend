@@ -40,7 +40,9 @@ server.listen(PORT, async () => {
     const examplesPath = path.resolve(__dirname, 'examples.md');
     const markdownData: string = fs.readFileSync(markdownPath, 'utf-8');
     const examplesData: string = fs.readFileSync(examplesPath, 'utf-8');
-    await new RequestService().loadFromText(markdownData);
+    // await new RequestService().loadFromText(markdownData);
     // Run only once
-    // new RequestService().loadFromSitemap('https://nextjs.org/sitemap.xml');
+    const siteMapUrl = 'https://docs.flutter.dev/sitemap.xml';
+    const dataSource = 'flutter-sitemap';
+    // new RequestService().loadFromSitemap(siteMapUrl, dataSource);
 });
