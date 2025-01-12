@@ -5,6 +5,7 @@ const publicRoutes = express.Router();
 const requestService = new RequestService()
 
 publicRoutes.post('/query', requestService.queryData);
+publicRoutes.post('/fetch', requestService.loadContentFromWebUrl);
 publicRoutes.post('/vectorize', requestService.vectorize);
 
 publicRoutes.get('/status', (req, res) => {

@@ -10,8 +10,7 @@ export class DatabaseFactory {
             return new HNSWDb();
         }
 
-        const projectName = dataSource === 'flutter-sitemap' ? 'flutter-docs' : 'next-docs-test';
-        console.log('Creating PineconeDb with project name:', projectName);
+        const projectName = dataSource === 'flutter-sitemap' ? 'flutter-docs-cleaned' : 'next-docs-cleaned';
         return new PineconeDb({
             projectName,
             namespace: '',
