@@ -5,4 +5,5 @@ The backend is built using
 - NodeJS
 - EmbedJS framework
 - Pinecone db
+- Llama 3.1 
 
